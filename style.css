@@ -1,0 +1,158 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Poppins", sans-serif;
+}
+
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: linear-gradient(to right, #e2e2e2, #c9d6ff);
+    color: #333;
+}
+
+/* Container */
+.container {
+    margin: 0 15px;
+}
+
+/* Form Box */
+.form-box {
+    width: 100%;
+    background: #ffffff;
+    display: none;
+    background-color: #fff;
+    padding: 30px 40px;
+    border-radius: 10px;
+    box-shadow: #fff;
+    width: 100%;
+    max-width: 450px;
+}
+
+.form-box.active {
+    display: block;
+}
+
+/* Headings */
+h1 {
+    font-size: 50px;
+}
+
+h2 {
+    font-size: 34px;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+/* Text and Links */
+p {
+    font-size: 14.5px;
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+p a {
+    color: #7494ec;
+    text-decoration: none;
+}
+
+p a:hover {
+    text-decoration: underline;
+}
+
+span {
+    color: #7494ec;
+}
+
+.box p {
+    font-size: 22px;
+}
+
+/* Form Inputs */
+input,
+select,
+textarea {
+    width: 100%;
+    padding: 12px;
+    background: #eee;
+    border-radius: 6px;
+    border: none;
+    outline: none;
+    font-size: 16px;
+    color: #333;
+    margin-bottom: 20px;
+}
+
+textarea {
+    resize: vertical;
+}
+
+/* File input */
+input[type="file"] {
+    background: #fff;
+    border: 1px solid #ccc;
+    padding: 10px;
+}
+
+/* Buttons */
+button,
+input[type="submit"] {
+    width: 100%;
+    padding: 12px;
+    background: #7494ec;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    color: #fff;
+    font-weight: 500;
+    margin-bottom: 20px;
+    transition: 0.5s;
+}
+
+button:hover,
+input[type="submit"]:hover {
+    background: #688483;
+}
+
+/* Special Button for .box */
+.box button {
+    display: block;
+    width: 300px;
+    margin: 0 auto;
+}
+
+/* Error Message */
+.error-message {
+    padding: 12px;
+    background: #f8d7da;
+    border-radius: 6px;
+    font-size: 16px;
+    color: #a42834;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+/* Labels */
+form label {
+    display: block;
+    margin-top: 15px;
+    font-weight: bold;
+}
+
+/* Form layout */
+.insertbox,
+.updatebox {
+    background-color: #fff;
+    padding: 30px 40px;
+    border-radius: 10px;
+    box-shadow: #fff;
+    width: 100%;
+    max-width: 500px;
+}
+
