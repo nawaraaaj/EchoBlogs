@@ -33,7 +33,7 @@ if ($current_user_role === 'admin' || $post['author_id'] == $current_user_id) {
     $delete_stmt->bind_param("i", $post_id);
     if ($delete_stmt->execute()) {
         $_SESSION['message'] = "Post deleted successfully!";
-        header("Location: dashboard.php");
+        header("Location: displaypost.php");
         exit;
     } else {
         echo "Error deleting post.";

@@ -7,7 +7,9 @@ mysqli_report(MYSQLI_REPORT_OFF);
 if (!isset($_SESSION['id']) || $_SESSION['role'] !== 'admin') {
 
     $_SESSION['access_denied'] = "Admin access required";
-    header("Location: index.php");
+    
+    header("Location: dashboard.php");
+    echo "<script>alert('Admin access required');</script>";
     exit();
 } else {
     if (isset($_POST['submit'])) {

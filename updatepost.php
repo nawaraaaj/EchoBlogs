@@ -1,151 +1,164 @@
 <?php
-
 session_start();
-$user_id = $_SESSION['id'];
-include "db.php";
+include 'db.php';
 
-if (!isset($_GET['post_id'])) {
-    die("Post ID is missing");
+// --- Authorization and Initial Setup ---
+
+// Check if user is logged in and is an author
+if (!isset($_SESSION['id']) || $_SESSION['role'] !== 'author') {
+    header("Location: dashboard.php");
+    exit();
 }
+$user_id = $_SESSION['id'];
 
+// Check if Post ID is provided in the URL
+if (!isset($_GET['post_id'])) {
+    die("Error: Post ID is missing.");
+}
 $post_id = (int)$_GET['post_id'];
+$error_message = '';
 
-if (!isset($_SESSION['id'])) {
-    header("Location: index.php");
-} else {
-    if ($_SESSION['role'] == 'author') {
+// --- Fetch Existing Post Data ---
 
+// Use a prepared statement to fetch the post to prevent SQL injection
+$stmt = $conn->prepare("SELECT * FROM posts WHERE id = ?");
+$stmt->bind_param("i", $post_id);
+$stmt->execute();
+$result = $stmt->get_result();
+if ($result->num_rows === 0) {
+    die("Error: Post not found.");
+}
+$post = $result->fetch_assoc();
+$stmt->close();
 
-        //fetching the data from database 
-        $sql = "SELECT * FROM posts WHERE id = '$post_id';";
-        $result = mysqli_query($conn, $sql);
-        $postdata = mysqli_fetch_assoc($result);
+// --- Fetch Categories for Dropdown ---
 
-        if (!$postdata) {
-            die("Post not found.");
-        }
-
-        $current_category_id = $postdata['category_id'];
-
-        $categories_sql = "SELECT * FROM categories;";
-        $categories_result = mysqli_query($conn, $categories_sql);
-
-
-        //now updating the posts
-        if (isset($_POST['submit'])) {
-            $id = (int) $_POST['id'];
-            $title = trim($_POST['title']);
-            $content = trim($_POST['content']);
-            $category_id = (int) $_POST['category_name'];
-            $existing_image = $_POST['existing_image'];
-
-            if (empty($title) || empty($content) || empty($category_id)) {
-                die('Please fill all required fields.');
-            }
-
-            var_dump($_POST['category_name']);
-
-
-            $image = $existing_image;
-            if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
-                $uploadDir = 'uploads/';
-                $tmpName = $_FILES['image']['tmp_name'];
-                $fileName = basename($_FILES['image']['name']);
-                $targetFilePath = $uploadDir . $fileName;
-
-                // Validatting file type only allows png,jpeg,gif and webp
-                $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-                $fileType = mime_content_type($tmpName);
-
-                if (!in_array($fileType, $allowedTypes)) {
-                    die('Only JPG, PNG, GIF, and WEBP images are allowed.');
-                }
-
-                // Generating a unique filename to prevent overwriting
-                $fileExt = pathinfo($fileName, PATHINFO_EXTENSION);
-                $uniqueFileName = uniqid('img_', true) . '.' . $fileExt;
-                $targetFilePath = $uploadDir . $uniqueFileName;
-
-                if (!move_uploaded_file($tmpName, $targetFilePath)) {
-                    die('Error uploading the file.');
-                }
-
-                // Delete old image file if it is different
-                if ($existing_image && file_exists($uploadDir . $existing_image) && $existing_image !== $uniqueFileName) {
-                    unlink($uploadDir . $existing_image);
-                }
-                $image = $uniqueFileName;
-            }
-
-            
-            $stmt = $conn->prepare("UPDATE posts SET title=?, content=?, category_id=?, image=? WHERE id=?");
-            $stmt->bind_param("ssisi", $title, $content, $category_id, $image, $id);
-
-
-            if ($stmt->execute()) {
-                echo "Post updated successfully.";
-                header("Location: viewpost.php?post_id=" . $post_id);
-                exit();
-            } else {
-                echo "Error updating post: " . $stmt->error;
-            }
-
-            $stmt->close();
-        }
-
+$categoryOptions = '';
+$categories_sql = "SELECT id, name FROM categories ORDER BY name ASC";
+$categories_result = mysqli_query($conn, $categories_sql);
+if ($categories_result) {
+    while ($cat = mysqli_fetch_assoc($categories_result)) {
+        $isSelected = ($cat['id'] == $post['category_id']) ? 'selected' : '';
+        $categoryOptions .= "<option value='{$cat['id']}' {$isSelected}>" . htmlspecialchars($cat['name']) . "</option>";
     }
 }
 
-?>
+// --- Handle Form Submission for Update ---
 
+if (isset($_POST['submit'])) {
+    $title = trim($_POST['title']);
+    $content = trim($_POST['content']);
+    $category_id = (int)$_POST['category_id'];
+    $image_name = $post['image']; // Default to existing image
+
+    // Basic validation
+    if (empty($title) || empty($content) || empty($category_id)) {
+        $error_message = "Please fill in all required fields.";
+    } else {
+        // Handle new image upload
+        if (isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
+            $allowed_types = ['image/jpeg', 'image/png', 'image/gif'];
+            if (in_array($_FILES['image']['type'], $allowed_types)) {
+                // Create a unique name for the new image
+                $new_image_name = time() . '_' . basename($_FILES['image']['name']);
+                $target_path = "uploads/" . $new_image_name;
+
+                if (move_uploaded_file($_FILES['image']['tmp_name'], $target_path)) {
+                    // Delete the old image if it exists and is different
+                    if (!empty($image_name) && file_exists("uploads/" . $image_name)) {
+                        unlink("uploads/" . $image_name);
+                    }
+                    $image_name = $new_image_name; // Set the new image name for the database
+                } else {
+                    $error_message = "Failed to upload new image.";
+                }
+            } else {
+                $error_message = "Invalid file type. Please upload a JPG, PNG, or GIF.";
+            }
+        }
+
+        // Proceed with database update if no errors
+        if (empty($error_message)) {
+            $update_stmt = $conn->prepare("UPDATE posts SET title = ?, content = ?, category_id = ?, image = ? WHERE id = ?");
+            $update_stmt->bind_param("ssisi", $title, $content, $category_id, $image_name, $post_id);
+
+            if ($update_stmt->execute()) {
+                header("Location: viewpost.php?post_id=" . $post_id . "&status=updated");
+                exit();
+            } else {
+                $error_message = "Error: Could not update the post. " . $update_stmt->error;
+            }
+            $update_stmt->close();
+        }
+    }
+}
+$conn->close();
+?>
 
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="style.css">
-    <title>Update Post</title>
+    <title>Edit Post</title>
+    <link rel="stylesheet" href="css/updatepost.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
-
 <body>
 
-    <form action="" method="POST" enctype="multipart/form-data" class="updatebox">
-        <h2 style="text-align: center;">Update Post</h2>
+    <header class="header">
+        <div class="header-content">
+            <h1 class="logo">Edit Post</h1>
+            <a href="dashboard.php" class="back-link">Back to Dashboard</a>
+        </div>
+    </header>
 
-        <!-- Hidden field to keep track of post ID-->
-        <input type="hidden" name="id" value="<?php echo $postdata['id']; ?>">
+    <main class="main-container">
+        <div class="form-container">
+            <form action="updatepost.php?post_id=<?php echo $post_id; ?>" method="POST" enctype="multipart/form-data">
+                <h2>Refine Your Post</h2>
 
+                <?php if (!empty($error_message)): ?>
+                    <div class="alert alert-error"><?php echo $error_message; ?></div>
+                <?php endif; ?>
 
-        <label for="title">Title:</label>
-        <input type="text" name="title" value="<?php echo htmlspecialchars($postdata['title']) ?>" required>
+                <div class="form-group">
+                    <label for="title">Post Title</label>
+                    <input type="text" id="title" name="title" value="<?php echo htmlspecialchars($post['title']); ?>" required>
+                </div>
 
-        <label for="content">Content:</label>
-        <textarea name="content" rows="5" placeholder="Write your content here..."
-            required><?php echo htmlspecialchars($postdata['content']) ?> </textarea>
+                <div class="form-group">
+                    <label for="content">Content</label>
+                    <textarea id="content" name="content" rows="10" required><?php echo htmlspecialchars($post['content']); ?></textarea>
+                </div>
 
+                <div class="form-group">
+                    <label for="category">Category</label>
+                    <select id="category" name="category_id" required>
+                        <?php echo $categoryOptions; ?>
+                    </select>
+                </div>
 
-        <label for="category">Select Category:</label>
-        <select name="category_name" id="category" required>
-            <option value="" disabled>Choose a category</option>
-            <?php while ($cat = mysqli_fetch_assoc($categories_result)): ?>
-                <option value="<?php echo $cat['id']; ?>" <?php echo ($cat['id'] == $postdata['category_id']) ? 'selected' : ''; ?>>
-                    <?php echo htmlspecialchars($cat['name']); ?>
-                </option>
-            <?php endwhile; ?>
-        </select>
+                <div class="form-group">
+                    <label for="image">Featured Image</label>
+                    <?php if (!empty($post['image'])): ?>
+                        <div class="current-image">
+                            <p>Current Image:</p>
+                            <img src="uploads/<?php echo htmlspecialchars($post['image']); ?>" alt="Current featured image" class="current-image-preview">
+                        </div>
+                    <?php endif; ?>
+                    <input type="file" id="image" name="image" accept="image/png, image/jpeg, image/gif">
+                    <p class="field-hint">Upload a new image to replace the current one.</p>
+                </div>
 
-        <label for="image">Image:</label>
-        <input type="file" name="image" accept="image/*">
-        <!-- Storing the existing file name in a hidden input -->
-        <input type="hidden" name="existing_image" value="<?php echo htmlspecialchars($postdata['image']); ?>">
-        <!-- Showing the existing filename -->
-        <p>Current uploaded file: <?php echo htmlspecialchars($postdata['image']); ?></p>
-
-        <input type="submit" name="submit" value="Update Post">
-    </form>
+                <div class="form-group">
+                    <button type="submit" name="submit">Update Post</button>
+                </div>
+            </form>
+        </div>
+    </main>
 
 </body>
-
 </html>
