@@ -1,0 +1,120 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap');
+
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Poppins", sans-serif;
+}
+
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: linear-gradient(to right, #e2e2e2, #c9d6ff);
+    color: #333;
+    padding: 20px;
+}
+
+.container {
+    width: 100%;
+    max-width: 420px;
+}
+
+
+.form-box {
+    display: none; 
+    background: #ffffff;
+    padding: 40px;
+    border-radius: 10px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    width: 100%;
+}
+
+.form-box.active {
+    display: block; 
+}
+
+.form-box h2 {
+    text-align: center;
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 25px;
+    color: #333;
+}
+
+.form-box input[type="text"],
+.form-box input[type="email"],
+.form-box input[type="password"],
+.form-box select {
+    width: 100%;
+    padding: 12px 15px;
+    margin-bottom: 20px;
+    background: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 16px;
+    color: #333;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.form-box input:focus,
+.form-box select:focus {
+    outline: none;
+    border-color: #7494ec;
+    box-shadow: 0 0 0 3px rgba(116, 148, 236, 0.2);
+}
+
+.form-box button {
+    width: 100%;
+    padding: 15px;
+    background: #7494ec;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    color: #fff;
+    font-weight: 600;
+    transition: background 0.3s;
+    margin-top: 10px;
+}
+
+.form-box button:hover {
+    background: #688483;
+}
+
+.form-box p {
+    text-align: center;
+    margin-top: 25px;
+    font-size: 14px;
+    color: #555;
+}
+
+.form-box p a {
+    color: #7494ec;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.form-box p a:hover {
+    text-decoration: underline;
+}
+
+.error-message {
+    padding: 12px;
+    background: #f8d7da;
+    border-radius: 6px;
+    font-size: 14px;
+    color: #a42834;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+@media (max-width: 480px) {
+    .form-box {
+        padding: 25px;
+    }
+}

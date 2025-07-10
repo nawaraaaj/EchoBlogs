@@ -30,7 +30,6 @@ include "db.php"; // Assuming db.php handles your database connection
 
             if (mysqli_num_rows($result) > 0) {
                 while($row = mysqli_fetch_assoc($result)) {
-                    // Truncate content for preview
                     $content_preview = strlen($row['content']) > 100 ? substr($row['content'], 0, 100) . "..." : $row['content'];
             ?>
                     <div class="post-card">

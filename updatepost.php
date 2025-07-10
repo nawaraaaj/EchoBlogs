@@ -4,23 +4,20 @@ include 'db.php';
 
 // --- Authorization and Initial Setup ---
 
-// Check if user is logged in and is an author
 if (!isset($_SESSION['id']) || $_SESSION['role'] !== 'author') {
     header("Location: dashboard.php");
     exit();
 }
 $user_id = $_SESSION['id'];
 
-// Check if Post ID is provided in the URL
+
 if (!isset($_GET['post_id'])) {
     die("Error: Post ID is missing.");
 }
 $post_id = (int)$_GET['post_id'];
 $error_message = '';
 
-// --- Fetch Existing Post Data ---
 
-// Use a prepared statement to fetch the post to prevent SQL injection
 $stmt = $conn->prepare("SELECT * FROM posts WHERE id = ?");
 $stmt->bind_param("i", $post_id);
 $stmt->execute();
@@ -31,7 +28,6 @@ if ($result->num_rows === 0) {
 $post = $result->fetch_assoc();
 $stmt->close();
 
-// --- Fetch Categories for Dropdown ---
 
 $categoryOptions = '';
 $categories_sql = "SELECT id, name FROM categories ORDER BY name ASC";
@@ -43,32 +39,28 @@ if ($categories_result) {
     }
 }
 
-// --- Handle Form Submission for Update ---
+
 
 if (isset($_POST['submit'])) {
     $title = trim($_POST['title']);
     $content = trim($_POST['content']);
     $category_id = (int)$_POST['category_id'];
-    $image_name = $post['image']; // Default to existing image
+    $image_name = $post['image']; 
 
-    // Basic validation
     if (empty($title) || empty($content) || empty($category_id)) {
         $error_message = "Please fill in all required fields.";
     } else {
-        // Handle new image upload
         if (isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
             $allowed_types = ['image/jpeg', 'image/png', 'image/gif'];
             if (in_array($_FILES['image']['type'], $allowed_types)) {
-                // Create a unique name for the new image
                 $new_image_name = time() . '_' . basename($_FILES['image']['name']);
                 $target_path = "uploads/" . $new_image_name;
 
                 if (move_uploaded_file($_FILES['image']['tmp_name'], $target_path)) {
-                    // Delete the old image if it exists and is different
                     if (!empty($image_name) && file_exists("uploads/" . $image_name)) {
                         unlink("uploads/" . $image_name);
                     }
-                    $image_name = $new_image_name; // Set the new image name for the database
+                    $image_name = $new_image_name; 
                 } else {
                     $error_message = "Failed to upload new image.";
                 }
@@ -77,7 +69,6 @@ if (isset($_POST['submit'])) {
             }
         }
 
-        // Proceed with database update if no errors
         if (empty($error_message)) {
             $update_stmt = $conn->prepare("UPDATE posts SET title = ?, content = ?, category_id = ?, image = ? WHERE id = ?");
             $update_stmt->bind_param("ssisi", $title, $content, $category_id, $image_name, $post_id);
